@@ -47,10 +47,9 @@ class ProjectProject(models.Model):
         if len(project_task_ids) > 0:
             min_date_start = fields.Datetime.from_string(
                 project_task_ids[0].date_start)
-            date_start_from_days = project_task_ids[0].from_days
             max_date_end = fields.Datetime.from_string(
                 project_task_ids[0].date_end)
-            date_end_from_days = project_task_ids[0].from_days
+            from_days = project_task_ids[0].from_days
             date_start = fields.Datetime.from_string(
                 project_task_ids[0].date_start)
             for project_task in project_task_ids:
@@ -65,18 +64,18 @@ class ProjectProject(models.Model):
                 date_end = fields.Datetime.from_string(project_task.date_end)
                 if min_date_start > date_start:
                     min_date_start = date_start
-                    date_start_from_days = project_task.from_days
+                    from_days = project_task.from_days
                 if max_date_end < date_end:
                     max_date_end = date_end
-                    date_end_from_days = project_task.from_days
+                    from_days = project_task.from_days
             if self.calculation_type == 'date_begin':
                 date_start = project_task_obj.calculate_date_without_weekend(
-                    date_start, date_start_from_days, increment=False)
+                    date_start, from_days, increment=False)
                 date_end = max_date_end
             else:
                 date_start = min_date_start
                 date_end = project_task_obj.calculate_date_without_weekend(
-                    max_date_end, date_end_from_days,
+                    max_date_end, from_days,
                     increment=True)
         return (fields.Datetime.to_string(date_start),
                 fields.Datetime.to_string(date_end))
