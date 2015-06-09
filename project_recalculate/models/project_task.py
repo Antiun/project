@@ -24,10 +24,6 @@
 from openerp import models, fields, api
 from datetime import timedelta
 
-import logging
-from pprint import pformat
-_logger = logging.getLogger(__name__)
-
 
 class ProjectTask(models.Model):
     _inherit = 'project.task'
@@ -91,7 +87,6 @@ class ProjectTask(models.Model):
 
     @api.multi
     def write(self, vals):
-        _logger.info("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA " +pformat(self.env.context))
         if (not self.env.context.get('project_recalculate')
                 and (vals.get('date_start') or vals.get('date_end'))):
             date_start = (vals.get('date_start')
