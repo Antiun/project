@@ -35,6 +35,7 @@ class ProjectProject(models.Model):
         help='how to calculate tasks with date start or date end references')
 
     def calcule_date_start_date_end(self):
+        vals = {}
         project_task_obj = self.env['project.task']
         project_task_ids = project_task_obj.search(
             [('project_id', '=', self.id)])
@@ -47,9 +48,10 @@ class ProjectProject(models.Model):
         if len(project_task_ids) > 0:
             min_date_start = fields.Datetime.from_string(
                 project_task_ids[0].date_start)
+            max_date_start = fields.Datetime.from_string(
+                project_task_ids[0].date_start)
             max_date_end = fields.Datetime.from_string(
                 project_task_ids[0].date_end)
-            from_days = project_task_ids[0].from_days
             date_start = fields.Datetime.from_string(
                 project_task_ids[0].date_start)
             for project_task in project_task_ids:
@@ -64,21 +66,15 @@ class ProjectProject(models.Model):
                 date_end = fields.Datetime.from_string(project_task.date_end)
                 if min_date_start > date_start:
                     min_date_start = date_start
-                    from_days = project_task.from_days
                 if max_date_end < date_end:
                     max_date_end = date_end
-                    from_days = project_task.from_days
+                if max_date_start < date_start:
+                    max_date_start = date_end
             if self.calculation_type == 'date_begin':
-                date_start = project_task_obj.calculate_date_without_weekend(
-                    date_start, from_days, increment=False)
-                date_end = max_date_end
+                vals['date'] = max_date_end
             else:
-                date_start = min_date_start
-                date_end = project_task_obj.calculate_date_without_weekend(
-                    max_date_end, from_days,
-                    increment=True)
-        return (fields.Datetime.to_string(date_start),
-                fields.Datetime.to_string(date_end))
+                vals['date_start'] = min_date_start
+        self.write(vals)
 
     def project_recalculate(self):
         if not self.calculation_type:
@@ -99,6 +95,6 @@ class ProjectProject(models.Model):
              ('stage_id', 'not in', project_task_type_ids)
              ])
         for project_task in project_task_ids:
-            project_task.task_recalculate()
-        date_start, date_end = self.calcule_date_start_date_end()
-        self.write({'date_start': date_start, 'date': date_end})
+            project_task.with_context(
+                self.env.context, project_recalculate=True).task_recalculate()
+        self.calcule_date_start_date_end()

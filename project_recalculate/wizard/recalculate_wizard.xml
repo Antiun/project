@@ -7,12 +7,21 @@
     <field name="model">project.recalculate.wizard</field>
     <field name="type">form</field>
     <field name="arch" type="xml">
-      <field name="project" invisible="1" />
-      <p>Project tasks "<field name="project_name" class="oe_inline" />" will be recalculated.
-      The reference date is "<field name="project_date" class="oe_inline" />"
-      Continue?</p>
+        <form string="Recalculate Project">
+            <group>
+                <field name="project" invisible="1" />
+                <p>This Project task will be recalculated the reference data:</p>
+                <group>
+                    <field string="Project name" name="project_name"/>
+                   <field string="Date reference" name="project_date"/>
+                </group>
+                <p>Are you sure?</p>
+            </group>
+            <footer>
+                <button name="confirm_button" string="Continue" type="object" /> <button string="Cancel" class="oe_link" special="cancel"/>
+            </footer>
+        </form>
 
-        <button name="confirm_button" string="Continue" type="object" /> <button aria-label="Close" class="close" data-dismiss="modal" type="button"/>
     </field>
    </record>
 

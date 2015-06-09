@@ -24,6 +24,10 @@
 from openerp import models, fields, api
 from datetime import timedelta
 
+import logging
+from pprint import pformat
+_logger = logging.getLogger(__name__)
+
 
 class ProjectTask(models.Model):
     _inherit = 'project.task'
@@ -74,24 +78,26 @@ class ProjectTask(models.Model):
             fields.Datetime.from_string(date_end))
         calculation_type = self.project_id.calculation_type
         if calculation_type:
-            date_start = (self.project_id.date_start
-                          if calculation_type == 'date_begin'
-                          else date_end)
-            date_end = (date_start
-                        if calculation_type == 'date_begin'
-                        else self.project_id.date)
+            if calculation_type == 'date_begin':
+                aux_date_end = date_start
+                aux_date_start = self.project_id.date_start
+            else:
+                aux_date_end = self.project_id.date
+                aux_date_start = date_start
             vals['from_days'] = self.count_days_without_weekend(
-                fields.Datetime.from_string(date_start),
-                fields.Datetime.from_string(date_end))
+                fields.Datetime.from_string(aux_date_start),
+                fields.Datetime.from_string(aux_date_end))
         return vals
 
     @api.multi
     def write(self, vals):
-        date_start = (vals.get('date_start')
-                      if vals.get('date_start') else self.date_start)
-        date_end = (vals.get('date_end')
-                    if vals.get('date_end') else self.date_end)
-        if date_start and date_end:
+        _logger.info("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA " +pformat(self.env.context))
+        if (not self.env.context.get('project_recalculate')
+                and (vals.get('date_start') or vals.get('date_end'))):
+            date_start = (vals.get('date_start')
+                          if vals.get('date_start') else self.date_start)
+            date_end = (vals.get('date_end')
+                        if vals.get('date_end') else self.date_end)
             vals = self.on_change_dates(date_start, date_end, vals)
         return super(ProjectTask, self).write(vals)
 
@@ -99,13 +105,13 @@ class ProjectTask(models.Model):
         self.ensure_one()
         increment = (True if self.project_id.calculation_type == 'date_begin'
                      else False)
-        project_date = (fields.Datetime.from_string(self.project_id.date_start)
-                        if self.project_id.calculation_type == 'date_begin'
-                        else fields.Datetime.from_string(self.project_id.date))
-        total_days = (self.from_days
-                      if increment else self.from_days + self.estimated_days)
+        if increment:
+            project_date = fields.Datetime.from_string(
+                self.project_id.date_start)
+        else:
+            project_date = fields.Datetime.from_string(self.project_id.date)
         date_start = self.calculate_date_without_weekend(
-            project_date, total_days, increment=increment)
+            project_date, self.from_days, increment=increment)
         task_date_start = fields.Datetime.to_string(date_start)
         task_date_end = fields.Datetime.to_string(
             self.calculate_date_without_weekend(
