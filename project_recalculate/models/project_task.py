@@ -37,12 +37,12 @@ class ProjectTask(models.Model):
     def count_days_without_weekend(self, date_start, date_end):
         days = (date_end - date_start).days
         return sum(1 for x in xrange(days)
-                   if (date_start + timedelta(x + 1)).weekday() < 5)
+                   if (date_start + timedelta(x)).weekday() < 5)
 
     def count_days_weekend(self, date_start, date_end):
         days = (date_end - date_start).days
         return sum(1 for x in xrange(days)
-                   if (date_start + timedelta(x + 1)).weekday() >= 5)
+                   if (date_start + timedelta(x)).weekday() >= 5)
 
     def correct_days_to_workable(self, date, increment=True):
         while date.weekday() >= 5:
@@ -53,20 +53,20 @@ class ProjectTask(models.Model):
         return date
 
     def calculate_date_without_weekend(self, date_start, days, increment=True):
-        if increment:
-            start = date_start
-            end = date_start + timedelta(days=days)
-        else:
-            start = date_start - timedelta(days=days)
-            end = date_start
-        holidays = self.count_days_weekend(start, end)
-        recalculate = (days + holidays)
-        if increment:
-            date = date_start + timedelta(days=recalculate)
-        else:
-            date = date_start - timedelta(days=recalculate)
-        date = self.correct_days_to_workable(date, increment)
-        return date
+        total_dias = None
+        c = 0
+        while days > total_dias or total_dias is None:
+            recalculate = days + c
+            if increment:
+                start = date_start
+                end = date_start + timedelta(days=recalculate)
+            else:
+                start = date_start - timedelta(days=recalculate)
+                end = date_start
+            total_dias = self.count_days_without_weekend(start, end)
+            c += 1
+        date = end if increment else start
+        return self.correct_days_to_workable(date, increment)
 
     def on_change_dates(self, date_start, date_end, vals):
         vals['estimated_days'] = self.count_days_without_weekend(
