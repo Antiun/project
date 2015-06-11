@@ -53,18 +53,16 @@ class ProjectTask(models.Model):
         return date
 
     def calculate_date_without_weekend(self, date_start, days, increment=True):
-        total_dias = None
-        c = 0
-        while days > total_dias or total_dias is None:
-            recalculate = days + c
+        total_days = 0
+        while days > total_days:
+            recalculate = days + (days - total_days)
             if increment:
                 start = date_start
                 end = date_start + timedelta(days=recalculate)
             else:
                 start = date_start - timedelta(days=recalculate)
                 end = date_start
-            total_dias = self.count_days_without_weekend(start, end)
-            c += 1
+            total_days = self.count_days_without_weekend(start, end)
         date = end if increment else start
         return self.correct_days_to_workable(date, increment)
 
